@@ -6,7 +6,7 @@
 
 ## En síntesis
 
-Cada partición se **replica** en varios brokers según el `replication.factor`. Uno de ellos es el **líder** y sirve todas las lecturas y escrituras; los demás son **seguidores** que copian al líder. El conjunto de réplicas que están **al día** se llama **ISR (In-Sync Replicas)**. Las escrituras se consideran durables cuando un mínimo de ISR (`min.insync.replicas`) las han recibido. Si el líder se cae, el controlador elige un **nuevo líder de entre los que están en ISR**. Si no quedan ISR suficientes, las escrituras se bloquean para preservar la durabilidad.
+Cada partición se **replica** en varios brokers según el `replication.factor`. Uno de ellos es el **líder** y sirve todas las lecturas y escrituras; los demás son **seguidores** que copian al líder. El conjunto de réplicas que están **al día** se llama **ISR (In-Sync Replicas)**. Las escrituras se consideran durables cuando un mínimo de ISR (`min.insync.replicas`) las han recibido. Si el líder se cae, el controlador elige un **nuevo líder de entre los que están en ISR**. Si no quedan ISR suficientes, las escrituras se bloquean para preservar la durabilidad. La configuración decide si priorizas **no perder datos** o **seguir respondiendo** (ver [CAP](#posicionamiento-ante-el-teorema-cap) más abajo).
 
 ## ¿Qué se replica?
 
@@ -94,6 +94,34 @@ Si **no queda ninguna réplica en ISR**, hay dos caminos posibles:
 
 > Preferir perder algunos mensajes y seguir escribiendo, o no perderlos y bloquear escrituras: esa decisión es `unclean.leader.election`.
 
+## Posicionamiento ante el teorema CAP
+
+Apache Kafka es un **sistema distribuido** que asume **tolerancia a particiones (P)**: si la red falla y algunos brokers quedan aislados, el cluster sigue intentando atender lecturas y escrituras. En el teorema CAP (Brewer), cuando hay partición no puedes tener a la vez **consistencia fuerte (C)** y **disponibilidad (A)**; Kafka **no elige un único polo para siempre**, sino que te deja **configurar** hacia dónde te inclinas.
+
+Dos piezas de este capítulo son las que materializan ese equilibrio:
+
+- **Replicación de particiones** — cada partición existe en varios brokers; si uno cae, otro puede sustituirlo.
+- **Líder de partición** — solo el líder atiende lecturas y escrituras; si cae, el controlador nombra otro líder (rebalanceo de metadatos).
+
+### Sin partición de red: tú eliges el compromiso
+
+| Orientación | Configuración típica | Qué ganas | Qué pierdes / arriesgas |
+|-------------|----------------------|-----------|-------------------------|
+| Más **disponibilidad (AP)** | `acks=1` o `0`, `min.insync.replicas=1`, elección de líder rápida sin exigir ISR completo | Respuestas rápidas, el flujo sigue aunque haya brokers lentos o caídas | Mensajes no replicados a tiempo pueden **perderse**; lecturas pueden ir **por detrás** del último dato confirmado → **consistencia eventual** |
+| Más **consistencia (CP)** | `acks=all`, `replication.factor` ≥ 3, `min.insync.replicas` ≥ 2, `unclean.leader.election.enable=false` (valor por defecto) | El productor solo recibe ACK si el mensaje está en el ISR mínimo; si no se puede garantizar la réplica, **error** en lugar de mentir | Si caen demasiados brokers, las **escrituras se bloquean** (`NOT_ENOUGH_REPLICAS`) hasta recuperar réplicas en sync |
+
+En la práctica, **sin configuración estricta** Kafka está orientado a **mantener el servicio y el throughput** (polo AP en fallos: nuevo líder en segundos). Para cargas críticas se endurece hacia CP con la fila de la tabla anterior — es el patrón que ya se ha visto con `min.insync.replicas` y la elección de líder solo desde ISR.
+
+### Cuando hay partición o fallo de broker
+
+1. **P como base** — el cluster no se apaga entero porque un nodo quede aislado; las particiones con réplicas sanas siguen con líder.
+2. **C frente a A** — si el líder muere antes de replicar todo, un nuevo líder desde el ISR puede tardar unos segundos en estar al día (consistencia eventual entre réplicas). Si activas **unclean leader election**, priorizas **seguir escribiendo** aunque el nuevo líder no tenga los últimos mensajes (**pierdes C**).
+3. **Bloquear antes que mentir** — con CP estricto, si no hay ISR suficiente la partición **no acepta escrituras** hasta que vuelva una réplica válida (**pierdes A** de escritura en esa partición, ganas **C**).
+
+Resumen en una frase: **Kafka siempre asume P; tú decides con `acks`, ISR y unclean election si, en un fallo, prefieres que el sistema siga respondiendo o que pare y devuelva error antes de perder datos.**
+
+Referencias externas (opcional): [Teorema CAP — AWS](https://docs.aws.amazon.com/whitepapers/latest/database-caching-strategies-with-relational-databases/cap-theorem.html), [CAP en Aprender Big Data](https://aprenderbigdata.com/teorema-cap/).
+
 ## `under-replicated` y otros indicadores
 
 Al ejecutar `kafka-topics --describe` aparecen líneas como:
@@ -137,6 +165,7 @@ flowchart LR
 
 ## Preguntas frecuentes
 
+- **¿Kafka es CP o AP?** Depende de la configuración: por defecto prioriza **seguir operando (A)** en fallos; con `acks=all` y `min.insync.replicas` alto se inclina a **CP** (bloquea escrituras antes que perder mensajes).
 - **¿Por qué fallan los productores si solo hay un broker caído?** Probablemente hay `acks=all` con `min.insync.replicas=3` y RF=3. Al perder uno, ya no se llega al mínimo. Lo habitual es **RF=3, `min.insync.replicas=2`**.
 - **¿Las lecturas también pasan por el líder?** Sí (con configuración estándar). Hay funciones avanzadas (*follower fetching*) para leer desde réplicas cercanas, no tratadas aquí.
 - **¿Cuánto tarda en elegirse nuevo líder?** Segundos. Se nota en el throughput durante el fallo; raramente es un parón largo si el cluster está sano.
