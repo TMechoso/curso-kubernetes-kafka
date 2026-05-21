@@ -1,5 +1,77 @@
 services:
+  format-broker1:
+    profiles: 
+      - format
+    build:
+      context: ./java
+    command: 
+      - /opt/kafka/bin/kafka-storage.sh
+      - format
+      - --ignore-formatted
+      - -t 
+      - MCL8kv1SWm87L_Md-I2hg
+      - -c  
+      - /config/broker1.properties
+    volumes:
+      - ./files:/files
+      - ./config:/config
+      - ./data/broker1:/data
+  format-broker2:
+    profiles: 
+      - format
+    build:
+      context: ./java
+    command: 
+      - /opt/kafka/bin/kafka-storage.sh
+      - format
+      - --ignore-formatted
+      - -t 
+      - MCL8kv1SWm87L_Md-I2hg
+      - -c  
+      - /config/broker2.properties
+    volumes:
+      - ./files:/files
+      - ./config:/config
+      - ./data/broker2:/data 
+  format-broker3:
+    profiles: 
+      - format
+    build:
+      context: ./java
+    command: 
+      - /opt/kafka/bin/kafka-storage.sh
+      - format
+      - --ignore-formatted
+      - -t 
+      - MCL8kv1SWm87L_Md-I2hg
+      - -c  
+      - /config/broker3.properties
+    volumes:
+      - ./files:/files
+      - ./config:/config
+      - ./data/broker3:/data 
+
+  format-quorum1:
+    profiles: 
+      - format
+    build:
+      context: ./java
+    command: 
+      - /opt/kafka/bin/kafka-storage.sh
+      - format
+      - --ignore-formatted
+      - -t 
+      - MCL8kv1SWm87L_Md-I2hg
+      - -c  
+      - /config/quorum1.properties
+    volumes:
+      - ./files:/files
+      - ./config:/config
+      - ./data/quorum1:/data    
+### cluster
   broker1:
+    profiles: 
+      - cluster
     build:
       context: ./java
     command: 
@@ -12,6 +84,8 @@ services:
     depends_on:
       - quorum1
   broker2:
+    profiles: 
+      - cluster
     build:
       context: ./java
     command: 
@@ -25,6 +99,8 @@ services:
       - ./config:/config
       - ./data/broker2:/data
   broker3:
+    profiles: 
+      - cluster
     build:
       context: ./java
     command: 
@@ -37,6 +113,8 @@ services:
     depends_on:
       - quorum1
   quorum1:
+    profiles:
+      - cluster
     build:
       context: ./java
     command: 
