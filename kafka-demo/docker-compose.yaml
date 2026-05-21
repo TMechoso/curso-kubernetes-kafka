@@ -124,3 +124,13 @@ services:
       - ./files:/files
       - ./config:/config
       - ./data/quorum1:/data
+### client
+  client:
+    profiles: 
+      - client
+    build:
+      context: ./java
+    command: 
+      - bash 
+      - -c 
+      - "sleep 3600"
