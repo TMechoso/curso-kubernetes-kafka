@@ -10,11 +10,26 @@ start:
 client:	
 	docker compose --profile client up -d
 
-producers:	
-# 	docker compose --profile producer up
+producers-node:
+	docker compose --profile producer-node up node-producer
 
-	docker compose run -it --rm producer1 bash -c \
-		"bash"
+consumers-node:
+	docker compose --profile consumer-node up node-consumer
+
+producers-python:
+	docker compose --profile producer-python up py-producer
+
+consumers-python:
+	docker compose --profile consumer-python up py-consumer
+
+producers:
+	docker compose --profile producer-node --profile producer-python up
+
+consumers:
+	docker compose --profile consumer-node --profile consumer-python up
+
+down:
+	docker compose down
 
 
 client-connect:

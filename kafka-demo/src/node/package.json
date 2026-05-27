@@ -1,11 +1,11 @@
 {
-  "name": "producer",
+  "name": "kafka-demo-node",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Node producer/consumer demos for Kafka cluster profiles",
+  "main": "producer.js",
   "scripts": {
-    "start": "node producer.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start:producer": "node producer.js",
+    "start:consumer": "node consumer.js"
   },
   "author": "",
   "license": "ISC",

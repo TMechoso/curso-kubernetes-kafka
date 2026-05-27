@@ -136,17 +136,78 @@ services:
       - "sleep 3600"
 
 
-  ### producers
-
-  producer1:
-    profiles: 
-      - producer
+  ### node demo services
+  node-producer:
+    profiles:
+      - producer-node
     build:
       context: ./node
     working_dir: /app
-    volumes: 
+    volumes:
       - ./src/node:/app
-    command: 
-      - bash 
-      - -c 
-      - "npm i && npm start"
+    environment:
+      BROKERS: broker1:9092,broker2:9092,broker3:9092
+      TOPIC: demo-node
+      CLIENT_ID: node-producer
+      INTERVAL_MS: 1000
+    command:
+      - bash
+      - -c
+      - "npm install && npm run start:producer"
+
+  node-consumer:
+    profiles:
+      - consumer-node
+    build:
+      context: ./node
+    working_dir: /app
+    volumes:
+      - ./src/node:/app
+    environment:
+      BROKERS: broker1:9092,broker2:9092,broker3:9092
+      TOPIC: demo-node
+      CLIENT_ID: node-consumer
+      GROUP_ID: demo-node-group
+      FROM_BEGINNING: "true"
+    command:
+      - bash
+      - -c
+      - "npm install && npm run start:consumer"
+
+  ### python demo services
+  py-producer:
+    profiles:
+      - producer-python
+    build:
+      context: ./python
+    working_dir: /app
+    volumes:
+      - ./src/python:/app
+    environment:
+      BOOTSTRAP_SERVERS: broker1:9092,broker2:9092,broker3:9092
+      TOPIC: demo-python
+      CLIENT_ID: py-producer
+      INTERVAL_MS: 1000
+    command:
+      - bash
+      - -c
+      - "pip install -r requirements.txt && python producer.py"
+
+  py-consumer:
+    profiles:
+      - consumer-python
+    build:
+      context: ./python
+    working_dir: /app
+    volumes:
+      - ./src/python:/app
+    environment:
+      BOOTSTRAP_SERVERS: broker1:9092,broker2:9092,broker3:9092
+      TOPIC: demo-python
+      GROUP_ID: demo-python-group
+      CLIENT_ID: py-consumer
+      AUTO_OFFSET_RESET: earliest
+    command:
+      - bash
+      - -c
+      - "pip install -r requirements.txt && python consumer.py"
