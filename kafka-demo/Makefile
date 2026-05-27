@@ -10,6 +10,12 @@ start:
 client:	
 	docker compose --profile client up -d
 
+producers:	
+# 	docker compose --profile producer up
+
+	docker compose run -it --rm producer1 bash -c \
+		"bash"
+
 
 client-connect:
 	docker exec -it kafka-demo-client-1 bash
@@ -30,6 +36,15 @@ topic-describe:
 	@read -p "Enter a topic name: " topic; \
 	docker compose run --rm client bash -c \
 		"./opt/kafka/bin/kafka-topics.sh --describe --bootstrap-server $(bootstrap-server) --topic $$topic"
+
+groups-list:
+	docker compose run --rm client bash -c \
+		"./opt/kafka/bin/kafka-consumer-groups.sh --list --bootstrap-server $(bootstrap-server)"
+
+group-all:
+	docker compose run --rm client bash -c \
+		"./opt/kafka/bin/kafka-consumer-groups.sh --describe --all-groups --bootstrap-server $(bootstrap-server)"	
+
 
 console-producer:
 	@read -p "Enter a topic name: " topic; \
