@@ -134,3 +134,19 @@ services:
       - bash 
       - -c 
       - "sleep 3600"
+
+
+  ### producers
+
+  producer1:
+    profiles: 
+      - producer
+    build:
+      context: ./node
+    working_dir: /app
+    volumes: 
+      - ./src/node:/app
+    command: 
+      - bash 
+      - -c 
+      - "npm i && npm start"
