@@ -24,9 +24,16 @@ async function main() {
       const key = message.key ? message.key.toString() : "null";
       const value = message.value ? message.value.toString() : "null";
       console.log(`[node-consumer] partition=${partition} offset=${message.offset} key=${key} value=${value}`);
+      console.log(JSON.parse(value))
+      await haceAlgo(JSON.parse(value))
     },
   });
 }
+
+async function haceAlgo({seq}){
+  console.log('Acabo de hacer una accion con el seq: ' + seq)
+}
+
 
 process.on("SIGINT", async () => {
   await consumer.disconnect();

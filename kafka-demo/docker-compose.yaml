@@ -168,7 +168,7 @@ services:
       TOPIC: demo-node
       CLIENT_ID: node-consumer
       GROUP_ID: demo-node-group
-      FROM_BEGINNING: "true"
+      FROM_BEGINNING: "false"
     command:
       - bash
       - -c

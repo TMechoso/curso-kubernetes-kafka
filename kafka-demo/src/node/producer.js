@@ -1,5 +1,5 @@
 const { Kafka } = require("kafkajs");
-
+const schema_registry_server = ip:puerto
 const brokers = (process.env.BROKERS || "broker1:9092")
   .split(",")
   .map((entry) => entry.trim())
@@ -9,6 +9,11 @@ const clientId = process.env.CLIENT_ID || "node-producer";
 const intervalMs = Number(process.env.INTERVAL_MS || "1000");
 
 const kafka = new Kafka({ clientId, brokers });
+
+ 
+
+SCHEMA
+
 const producer = kafka.producer();
 
 let seq = 0;
@@ -26,8 +31,13 @@ async function main() {
     };
     try {
       await producer.send({
+        
         topic,
-        messages: [{ key: `node-${seq}`, value: JSON.stringify(payload) }],
+        messages: [
+          { key: `node-${seq}`, value: JSON.stringify(payload) },
+
+
+        ],
       });
       console.log(`[node-producer] sent seq=${seq}`);
     } catch (error) {
